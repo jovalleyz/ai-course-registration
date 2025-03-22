@@ -1,8 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { Check, Calendar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { Check } from 'lucide-react';
 
 interface RegistrationCompleteProps {
   formData: {
@@ -31,10 +29,6 @@ const RegistrationComplete: React.FC<RegistrationCompleteProps> = ({ formData })
     
     return () => clearTimeout(timer);
   }, []);
-
-  const addToCalendar = () => {
-    toast.success('Recordatorio añadido a su calendario');
-  };
 
   return (
     <div className="text-center py-8 animate-scale-in">
@@ -72,17 +66,7 @@ const RegistrationComplete: React.FC<RegistrationCompleteProps> = ({ formData })
             </li>
             <li className="flex items-start gap-3 opacity-0 -translate-y-2 transition-all duration-300 next-step-item">
               <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center mt-0.5">4</span>
-              <div>
-                <span>Prepare cualquier pregunta que tenga para la clase.</span>
-                <Button 
-                  variant="link" 
-                  className="text-primary p-0 h-auto text-sm mt-1"
-                  onClick={addToCalendar}
-                >
-                  <Calendar size={14} className="mr-1" />
-                  Añadir recordatorio al calendario
-                </Button>
-              </div>
+              <span>Prepare cualquier pregunta que tenga para la clase.</span>
             </li>
           </ol>
         </div>

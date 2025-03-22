@@ -1,8 +1,9 @@
 
-import React, { useState, useRef } from 'react';
-import { ArrowLeft, ArrowRight, Copy, Check, Upload } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, ArrowRight, Copy, Check, Upload, File, FileText, FileImage } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface PaymentDetailsProps {
   formData: {
@@ -16,6 +17,7 @@ interface PaymentDetailsProps {
 const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload, onNext, onBack }) => {
   const [copied, setCopied] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const paymentDetails = [
@@ -25,6 +27,35 @@ const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload,
     { label: 'Número de Cuenta de Ahorro', value: '207 923 200 15' },
     { label: 'Monto a Pagar', value: '1,200 pesos dominicanos' },
   ];
+
+  useEffect(() => {
+    // Generate preview for existing file
+    if (formData.receipt) {
+      generateFilePreview(formData.receipt);
+    } else {
+      setFilePreview(null);
+    }
+  }, [formData.receipt]);
+
+  const generateFilePreview = (file: File) => {
+    // Only generate previews for images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFilePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // For non-images (like PDFs), set to null
+      setFilePreview(null);
+    }
+  };
+
+  const getFileIcon = (file: File) => {
+    if (file.type.includes('pdf')) return <FileText size={24} className="text-red-500" />;
+    if (file.type.includes('image')) return <FileImage size={24} className="text-blue-500" />;
+    return <File size={24} className="text-gray-500" />;
+  };
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -65,7 +96,7 @@ const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload,
   };
 
   const validateAndUploadFile = (file: File) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/tiff', 'application/pdf'];
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/tiff', 'application/pdf'];
     const maxSize = 5 * 1024 * 1024; // 5MB
     
     if (!validTypes.includes(file.type)) {
@@ -79,6 +110,7 @@ const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload,
     }
     
     onFileUpload(file);
+    generateFilePreview(file);
     toast.success('Comprobante de pago subido correctamente');
   };
 
@@ -88,15 +120,46 @@ const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload,
     }
   };
 
+  const renderFilePreview = () => {
+    if (!formData.receipt) return null;
+    
+    return (
+      <div className="mt-2 w-full">
+        {filePreview ? (
+          <div className="relative w-full h-32 rounded-md overflow-hidden">
+            <img 
+              src={filePreview} 
+              alt="Vista previa" 
+              className="w-full h-full object-contain bg-black/5 rounded-md" 
+            />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 p-3 bg-secondary rounded-md">
+            {getFileIcon(formData.receipt)}
+            <span className="text-sm font-medium truncate">
+              {formData.receipt.name}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="animate-scale-in">
       <div className="space-y-6">
-        <div className="glass-card p-6 mb-6">
+        <div className="glass-card p-6 mb-6 hover:shadow-lg transition-shadow duration-300">
           <h3 className="text-lg font-medium text-center mb-6">Detalles de Pago</h3>
           
           <div className="space-y-4">
-            {paymentDetails.map((detail) => (
-              <div key={detail.label} className="flex justify-between items-center p-3 rounded-md bg-secondary">
+            {paymentDetails.map((detail, index) => (
+              <div 
+                key={detail.label} 
+                className={cn(
+                  "flex justify-between items-center p-3 rounded-md bg-secondary transform transition-all duration-300",
+                  index % 2 === 0 ? "hover:-translate-y-1" : "hover:translate-y-1"
+                )}
+              >
                 <div>
                   <div className="text-sm text-muted-foreground">{detail.label}</div>
                   <div className="font-medium">{detail.value}</div>
@@ -118,8 +181,8 @@ const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload,
         </div>
         
         <div 
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            isDragging ? 'border-primary bg-primary/5' : 'border-muted hover:border-primary/50'
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
+            isDragging ? 'border-primary bg-primary/5 scale-105' : 'border-muted hover:border-primary/50'
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -142,6 +205,7 @@ const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload,
                 <p className="font-medium">Comprobante subido correctamente</p>
                 <p className="text-sm text-muted-foreground mt-1">{formData.receipt.name}</p>
               </div>
+              {renderFilePreview()}
               <Button
                 type="button"
                 variant="outline"
@@ -154,18 +218,21 @@ const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload,
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-muted">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-muted animate-pulse-subtle">
                 <Upload className="text-muted-foreground" size={24} />
               </div>
               <div>
                 <p className="font-medium">Suba su comprobante de pago</p>
                 <p className="text-sm text-muted-foreground mt-1">Arrastre y suelte un archivo, o haga clic en explorar</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Formatos aceptados: JPG, PNG, TIFF, PDF (máx. 5MB)
+                </p>
               </div>
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleBrowseFiles}
-                className="mt-2"
+                className="mt-2 hover:shadow-md transition-shadow duration-300"
               >
                 Explorar archivos
               </Button>
@@ -178,7 +245,7 @@ const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload,
             type="button" 
             onClick={onBack}
             variant="outline"
-            className="flex-1 flex items-center justify-center gap-2 py-6 rounded-lg"
+            className="flex-1 flex items-center justify-center gap-2 py-6 rounded-lg hover:bg-muted transition-colors"
           >
             <ArrowLeft size={18} /> Atrás
           </Button>
@@ -187,9 +254,10 @@ const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload,
             type="button" 
             onClick={onNext}
             disabled={!formData.receipt}
-            className="flex-1 flex items-center justify-center gap-2 py-6 rounded-lg glass-button disabled:opacity-70"
+            className="flex-1 flex items-center justify-center gap-2 py-6 rounded-lg glass-button disabled:opacity-70 relative overflow-hidden group"
           >
-            Continuar <ArrowRight size={18} />
+            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary/0 via-white/10 to-primary/0 transform -translate-x-full animate-shine"></span>
+            <span>Continuar</span> <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
       </div>

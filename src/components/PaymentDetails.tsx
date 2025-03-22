@@ -1,9 +1,8 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Copy, Check, Upload, File, FileText, FileImage } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { ArrowLeft, ArrowRight, Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 interface PaymentDetailsProps {
   formData: {
@@ -15,251 +14,230 @@ interface PaymentDetailsProps {
 }
 
 const PaymentDetails: React.FC<PaymentDetailsProps> = ({ formData, onFileUpload, onNext, onBack }) => {
-  const [copied, setCopied] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const paymentDetails = [
-    { label: 'Banco', value: 'BHD' },
-    { label: 'Beneficiario', value: 'Jonathan Valle' },
-    { label: 'Cédula', value: '402 434 5432 5' },
-    { label: 'Número de Cuenta de Ahorro', value: '207 923 200 15' },
-    { label: 'Monto a Pagar', value: '1,200 pesos dominicanos' },
-  ];
-
-  useEffect(() => {
-    // Generate preview for existing file
-    if (formData.receipt) {
-      generateFilePreview(formData.receipt);
-    } else {
-      setFilePreview(null);
+  
+  // Allowed file types
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+  const maxSizeMB = 5;
+  
+  // Handle file validation
+  const validateFile = (file: File): boolean => {
+    // Check file type
+    if (!allowedTypes.includes(file.type)) {
+      setFileError(`Tipo de archivo no permitido. Por favor, suba una imagen o PDF.`);
+      return false;
     }
-  }, [formData.receipt]);
-
-  const generateFilePreview = (file: File) => {
-    // Only generate previews for images
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFilePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      // For non-images (like PDFs), set to null
-      setFilePreview(null);
-    }
-  };
-
-  const getFileIcon = (file: File) => {
-    if (file.type.includes('pdf')) return <FileText size={24} className="text-red-500" />;
-    if (file.type.includes('image')) return <FileImage size={24} className="text-blue-500" />;
-    return <File size={24} className="text-gray-500" />;
-  };
-
-  const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(label);
-    toast.success(`${label} copiado al portapapeles`);
     
-    setTimeout(() => {
-      setCopied(null);
-    }, 2000);
+    // Check file size (max 5MB)
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      setFileError(`El archivo es demasiado grande. El tamaño máximo permitido es ${maxSizeMB}MB.`);
+      return false;
+    }
+    
+    setFileError(null);
+    return true;
   };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      validateAndUploadFile(file);
+  
+  // Process uploaded file
+  const processFile = (file: File) => {
+    if (validateFile(file)) {
+      onFileUpload(file);
+      
+      // Create preview
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFilePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type === 'application/pdf') {
+        // For PDFs, just show an icon
+        setFilePreview('pdf');
+      }
+      
+      toast.success(`${file.name} subido correctamente`);
     }
   };
-
+  
+  // Handle drag events
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
   };
-
-  const handleDragLeave = () => {
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
     setIsDragging(false);
   };
-
+  
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
     
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      validateAndUploadFile(file);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
     }
   };
-
-  const validateAndUploadFile = (file: File) => {
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/tiff', 'application/pdf'];
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    
-    if (!validTypes.includes(file.type)) {
-      toast.error('Formato de archivo no válido. Por favor, suba una imagen (JPG, PNG, TIFF) o PDF.');
-      return;
+  
+  // Handle file input change
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFile(e.target.files[0]);
     }
-    
-    if (file.size > maxSize) {
-      toast.error('El archivo es demasiado grande. El tamaño máximo es 5MB.');
-      return;
-    }
-    
-    onFileUpload(file);
-    generateFilePreview(file);
-    toast.success('Comprobante de pago subido correctamente');
   };
-
-  const handleBrowseFiles = () => {
+  
+  // Trigger file input click
+  const triggerFileInput = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
-
-  const renderFilePreview = () => {
-    if (!formData.receipt) return null;
-    
-    return (
-      <div className="mt-2 w-full">
-        {filePreview ? (
-          <div className="relative w-full h-32 rounded-md overflow-hidden">
-            <img 
-              src={filePreview} 
-              alt="Vista previa" 
-              className="w-full h-full object-contain bg-black/5 rounded-md" 
-            />
+  
+  // Remove uploaded file
+  const removeFile = () => {
+    if (formData.receipt) {
+      onFileUpload(null as unknown as File);
+      setFilePreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      toast.info('Archivo eliminado');
+    }
+  };
+  
+  return (
+    <div className="animate-scale-in">
+      <h3 className="text-lg font-medium text-center mb-6">Comprobante de Pago</h3>
+      
+      <div className="glass-card p-5 mb-6 border border-muted">
+        <h4 className="font-medium text-center mb-3">Detalles de Pago</h4>
+        
+        <div className="bg-secondary p-4 rounded-md space-y-3 mb-4">
+          <div className="grid grid-cols-2 gap-1">
+            <div className="text-sm text-muted-foreground">Banco:</div>
+            <div className="font-medium text-sm">BHD</div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-1">
+            <div className="text-sm text-muted-foreground">Beneficiario:</div>
+            <div className="font-medium text-sm">Jonathan Valle</div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-1">
+            <div className="text-sm text-muted-foreground">Cédula:</div>
+            <div className="font-medium text-sm">402 434 5432 5</div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-1">
+            <div className="text-sm text-muted-foreground">Cuenta de Ahorro:</div>
+            <div className="font-medium text-sm">207 923 200 15</div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-1">
+            <div className="text-sm text-muted-foreground">Monto:</div>
+            <div className="font-medium text-sm">1,200 pesos dominicanos</div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mb-8">
+        <div className="text-sm font-medium mb-2">Subir Comprobante de Pago<span className="text-red-500">*</span></div>
+        
+        {formData.receipt ? (
+          <div className="bg-secondary p-3 rounded-md mb-3 flex items-center gap-3 animate-fade-in">
+            <div className="relative min-w-16 h-16 bg-background rounded overflow-hidden flex items-center justify-center">
+              {filePreview ? (
+                filePreview === 'pdf' ? (
+                  <File size={24} className="text-primary" />
+                ) : (
+                  <img src={filePreview} alt="Preview" className="w-full h-full object-cover" />
+                )
+              ) : (
+                <File size={24} className="text-primary" />
+              )}
+            </div>
+            
+            <div className="flex-grow">
+              <div className="flex items-center gap-1 mb-1">
+                <CheckCircle size={16} className="text-green-600" />
+                <div className="font-medium text-sm truncate">
+                  {formData.receipt.name}
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {(formData.receipt.size / 1024 / 1024).toFixed(2)} MB
+              </div>
+            </div>
+            
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={removeFile}
+              className="text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <X size={18} />
+            </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 p-3 bg-secondary rounded-md">
-            {getFileIcon(formData.receipt)}
-            <span className="text-sm font-medium truncate">
-              {formData.receipt.name}
-            </span>
+          <div 
+            className={`border-2 border-dashed rounded-md p-6 transition-colors cursor-pointer text-center 
+              ${isDragging ? 'border-primary bg-primary/5' : 'border-muted hover:border-primary/50 hover:bg-secondary'}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={triggerFileInput}
+          >
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept=".jpg,.jpeg,.png,.gif,.webp,.pdf"
+              className="hidden"
+            />
+            
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <Upload size={20} className="text-primary" />
+              </div>
+              <div>
+                <div className="font-medium">Haga clic o arrastre un archivo</div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  JPG, PNG, GIF, WEBP o PDF (máx. {maxSizeMB}MB)
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {fileError && (
+          <div className="flex items-center gap-2 mt-2 text-destructive animate-fade-in text-sm">
+            <AlertCircle size={16} />
+            <div>{fileError}</div>
           </div>
         )}
       </div>
-    );
-  };
-
-  return (
-    <div className="animate-scale-in">
-      <div className="space-y-6">
-        <div className="glass-card p-6 mb-6 hover:shadow-lg transition-shadow duration-300">
-          <h3 className="text-lg font-medium text-center mb-6">Detalles de Pago</h3>
-          
-          <div className="space-y-4">
-            {paymentDetails.map((detail, index) => (
-              <div 
-                key={detail.label} 
-                className={cn(
-                  "flex justify-between items-center p-3 rounded-md bg-secondary transform transition-all duration-300",
-                  index % 2 === 0 ? "hover:-translate-y-1" : "hover:translate-y-1"
-                )}
-              >
-                <div>
-                  <div className="text-sm text-muted-foreground">{detail.label}</div>
-                  <div className="font-medium">{detail.value}</div>
-                </div>
-                <button
-                  onClick={() => handleCopy(detail.value, detail.label)}
-                  className="p-2 rounded-full hover:bg-muted transition-colors"
-                  aria-label={`Copiar ${detail.label}`}
-                >
-                  {copied === detail.label ? (
-                    <Check size={18} className="text-primary" />
-                  ) : (
-                    <Copy size={18} className="text-muted-foreground" />
-                  )}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div 
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
-            isDragging ? 'border-primary bg-primary/5 scale-105' : 'border-muted hover:border-primary/50'
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+      
+      <div className="flex gap-3">
+        <Button 
+          type="button" 
+          onClick={onBack}
+          variant="outline"
+          className="flex-1 flex items-center justify-center gap-2 py-6 rounded-lg"
         >
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileInputChange}
-            accept=".jpg,.jpeg,.png,.tiff,.pdf"
-            className="hidden"
-          />
-          
-          {formData.receipt ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-primary/10 text-primary">
-                <Check size={24} />
-              </div>
-              <div>
-                <p className="font-medium">Comprobante subido correctamente</p>
-                <p className="text-sm text-muted-foreground mt-1">{formData.receipt.name}</p>
-              </div>
-              {renderFilePreview()}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleBrowseFiles}
-                className="mt-2"
-              >
-                Cambiar archivo
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-muted animate-pulse-subtle">
-                <Upload className="text-muted-foreground" size={24} />
-              </div>
-              <div>
-                <p className="font-medium">Suba su comprobante de pago</p>
-                <p className="text-sm text-muted-foreground mt-1">Arrastre y suelte un archivo, o haga clic en explorar</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Formatos aceptados: JPG, PNG, TIFF, PDF (máx. 5MB)
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBrowseFiles}
-                className="mt-2 hover:shadow-md transition-shadow duration-300"
-              >
-                Explorar archivos
-              </Button>
-            </div>
-          )}
-        </div>
+          <ArrowLeft size={18} /> Atrás
+        </Button>
         
-        <div className="flex gap-3 mt-8">
-          <Button 
-            type="button" 
-            onClick={onBack}
-            variant="outline"
-            className="flex-1 flex items-center justify-center gap-2 py-6 rounded-lg hover:bg-muted transition-colors"
-          >
-            <ArrowLeft size={18} /> Atrás
-          </Button>
-          
-          <Button 
-            type="button" 
-            onClick={onNext}
-            disabled={!formData.receipt}
-            className="flex-1 flex items-center justify-center gap-2 py-6 rounded-lg glass-button disabled:opacity-70 relative overflow-hidden group"
-          >
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary/0 via-white/10 to-primary/0 transform -translate-x-full animate-shine"></span>
-            <span>Continuar</span> <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </div>
+        <Button 
+          type="button" 
+          onClick={onNext}
+          disabled={!formData.receipt}
+          className="flex-1 flex items-center justify-center gap-2 py-6 rounded-lg glass-button"
+        >
+          Finalizar <ArrowRight size={18} />
+        </Button>
       </div>
     </div>
   );

@@ -137,7 +137,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   const handleDateSelect = (date: Date, disabled: boolean) => {
     if (disabled) return;
     onDateSelect(date);
-    onTimeSelect(''); // Reset time selection when date changes
+    onTimeSelect(null as unknown as string); // Reset time selection when date changes
   };
 
   // Format date to display
@@ -161,7 +161,7 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
   return (
     <div className="animate-scale-in">
       <div className="space-y-6">
-        <div className="calendar-container">
+        <div className="calendar-container shadow-md rounded-lg overflow-hidden border border-muted">
           <div className="calendar-header flex justify-between items-center bg-primary text-white p-4 rounded-t-lg">
             <button 
               onClick={goToPreviousMonth}
@@ -183,9 +183,9 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
           </div>
           
           <div className="bg-white p-4 rounded-b-lg">
-            <div className="calendar-grid">
+            <div className="grid grid-cols-7 gap-1">
               {daysOfWeek.map((day, index) => (
-                <div key={index} className="calendar-day-header">
+                <div key={index} className="text-center text-sm font-medium text-muted-foreground py-2">
                   {day}
                 </div>
               ))}
@@ -193,9 +193,15 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
               {calendarDays.map((day, index) => (
                 <div
                   key={index}
-                  className={`calendar-day ${day.disabled ? 'disabled' : ''} ${
-                    isDateSelected(day.date) ? 'selected' : ''
-                  }`}
+                  className={`
+                    aspect-square flex items-center justify-center rounded-md text-sm cursor-pointer transition-all
+                    ${day.disabled 
+                      ? 'text-gray-300 cursor-not-allowed' 
+                      : isDateSelected(day.date)
+                        ? 'bg-primary text-white font-medium shadow-md scale-105'
+                        : 'hover:bg-primary/10 text-gray-700'
+                    }
+                  `}
                   onClick={() => handleDateSelect(day.date, day.disabled)}
                 >
                   {formatDate(day.date)}
@@ -213,8 +219,14 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
                 {availableTimeSlots.map((time) => (
                   <div
                     key={time}
-                    className={`time-slot ${formData.selectedTime === time ? 'selected' : ''}`}
                     onClick={() => onTimeSelect(time)}
+                    className={`
+                      p-3 border rounded-md text-center cursor-pointer transition-all
+                      ${formData.selectedTime === time 
+                        ? 'bg-primary text-white border-primary shadow-md scale-105' 
+                        : 'border-gray-200 hover:border-primary/50 hover:bg-primary/5'
+                      }
+                    `}
                   >
                     {time}
                   </div>

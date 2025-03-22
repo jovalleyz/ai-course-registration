@@ -15,7 +15,7 @@ const RegistrationProgress: React.FC<RegistrationProgressProps> = ({ currentStep
     'Datos Personales',
     'Fecha y Hora',
     'Resumen',
-    'Pago'
+    'Finalizar'
   ];
   
   return (

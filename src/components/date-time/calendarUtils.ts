@@ -104,3 +104,58 @@ export const getAvailableTimeSlots = (
     }
   }
 };
+
+// Generate PDF summary of registration
+export const generateSummaryData = (formData: {
+  name: string;
+  phone: string;
+  email: string;
+  classType: 'individual' | 'group';
+  selectedDate: Date | null;
+  selectedTime: string | null;
+}): string => {
+  const { name, phone, email, classType, selectedDate, selectedTime } = formData;
+  
+  const formatDate = (date: Date | null): string => {
+    if (!date) return 'No seleccionada';
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+  
+  const summaryText = `
+RESUMEN DE REGISTRO
+===================
+
+DATOS DEL ALUMNO
+-----------------
+Nombre: ${name}
+Teléfono: ${phone}
+Correo: ${email}
+
+DETALLES DE LA CLASE
+-------------------
+Curso: Uso de Inteligencia Artificial
+Tipo de Clase: ${classType === 'individual' ? 'Individual' : 'Grupal'}
+Fecha: ${formatDate(selectedDate)}
+Horario: ${selectedTime || 'No seleccionado'}
+
+INFORMACIÓN DE PAGO
+------------------
+Banco: BHD
+Beneficiario: Jonathan Valle
+Cédula: 402 434 5432 5
+Cuenta de Ahorro: 207 923 200 15
+Monto: 1,200 pesos dominicanos
+
+Por favor, envíe el comprobante de pago a:
+Email: jvalle@ovm-consulting.com
+WhatsApp: +1 829 534 1802
+
+Gracias por su registro.
+  `.trim();
+  
+  return summaryText;
+};

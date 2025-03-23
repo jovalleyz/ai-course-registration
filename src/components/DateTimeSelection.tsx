@@ -4,6 +4,7 @@ import CalendarHeader from './date-time/CalendarHeader';
 import CalendarGrid from './date-time/CalendarGrid';
 import TimeSlotsGrid from './date-time/TimeSlotsGrid';
 import NavigationButtons from './date-time/NavigationButtons';
+import DownloadSummary from './date-time/DownloadSummary';
 import { generateCalendarDays, getAvailableTimeSlots } from './date-time/calendarUtils';
 
 interface DateTimeSelectionProps {
@@ -11,6 +12,9 @@ interface DateTimeSelectionProps {
     classType: 'individual' | 'group';
     selectedDate: Date | null;
     selectedTime: string | null;
+    name: string;
+    phone: string;
+    email: string;
   };
   onDateSelect: (date: Date) => void;
   onTimeSelect: (time: string) => void;
@@ -111,6 +115,8 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
           onBack={onBack}
           isNextDisabled={!isFormValid}
         />
+        
+        <DownloadSummary formData={formData} />
       </div>
     </div>
   );

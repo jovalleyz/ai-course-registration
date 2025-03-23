@@ -7,6 +7,7 @@ import PaymentDetails from '@/components/PaymentDetails';
 import RegistrationComplete from '@/components/RegistrationComplete';
 import RegistrationProgress from '@/components/RegistrationProgress';
 import { toast } from 'sonner';
+import { saveRegistration } from '@/lib/supabaseClient';
 
 // Define form data interface
 export interface FormData {
@@ -16,6 +17,7 @@ export interface FormData {
   classType: 'individual' | 'group';
   selectedDate: Date | null;
   selectedTime: string | null;
+  registrationId?: string;
 }
 
 const initialFormData: FormData = {
@@ -62,21 +64,43 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onProcessingChange 
   };
 
   // Complete registration
-  const completeRegistration = () => {
+  const completeRegistration = async () => {
     setIsProcessing(true);
     if (onProcessingChange) {
       onProcessingChange(true);
     }
     
-    // Simulate processing time
-    setTimeout(() => {
+    try {
+      // Save registration to Supabase
+      const result = await saveRegistration(formData);
+      
+      if (result.success && result.data) {
+        // Store the registration ID if it exists
+        setFormData(prev => ({
+          ...prev,
+          registrationId: result.data[0]?.id
+        }));
+        
+        // Proceed to completion step
+        setTimeout(() => {
+          setIsProcessing(false);
+          setCurrentStep(totalSteps);
+          if (onProcessingChange) {
+            onProcessingChange(false);
+          }
+          toast.success('Su registro ha sido completado exitosamente');
+        }, 1500);
+      } else {
+        throw new Error('No se pudo guardar el registro');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
       setIsProcessing(false);
-      setCurrentStep(totalSteps);
       if (onProcessingChange) {
         onProcessingChange(false);
       }
-      toast.success('Su registro ha sido completado exitosamente');
-    }, 1500);
+      toast.error('Hubo un error al procesar su registro. Por favor, intente nuevamente.');
+    }
   };
 
   // Navigate to next step

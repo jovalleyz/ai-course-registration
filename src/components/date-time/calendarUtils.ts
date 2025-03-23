@@ -11,9 +11,9 @@ export const groupTimeSlots = ['6:00–7:30', '7:30–9:00'];
 export const isDateDisabled = (date: Date, today: Date, classType: 'individual' | 'group'): boolean => {
   if (date < today) return true;
   
-  // Allow selection for current month and next 2 months only
+  // Allow selection for current month and next 3 months
   const maxDate = new Date();
-  maxDate.setMonth(maxDate.getMonth() + 2);
+  maxDate.setMonth(maxDate.getMonth() + 3);
   maxDate.setDate(maxDate.getDate() + 1); // Include the full last day
   if (date > maxDate) return true;
   

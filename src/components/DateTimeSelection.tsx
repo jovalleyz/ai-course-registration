@@ -21,7 +21,18 @@ interface DateTimeSelectionProps {
 const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({ 
   formData, onDateSelect, onTimeSelect, onNext, onBack 
 }) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  // Initialize currentMonth to the current month or to the month of the selectedDate if it exists
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    if (formData.selectedDate) {
+      return new Date(
+        formData.selectedDate.getFullYear(),
+        formData.selectedDate.getMonth(),
+        1
+      );
+    }
+    return new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  });
+  
   const [calendarDays, setCalendarDays] = useState<Array<{ date: Date; disabled: boolean }>>([]);
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
 

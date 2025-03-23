@@ -158,7 +158,9 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col animate-fade-in">
       <div className="container max-w-4xl mx-auto px-4 py-12 flex-grow">
         <div className="text-center mb-10">
-          <div className="text-sm font-medium text-primary mb-2 animate-pulse-subtle">Formulario de Registro</div>
+          <div className="text-sm font-medium text-primary mb-2 animate-pulse-subtle">
+            <span className="text-lg">Formulario de Registro</span>
+          </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-3 relative">
             <span className="bg-gradient-to-r from-primary to-blue-700 bg-clip-text text-transparent">
               Curso de Uso de Inteligencia Artificial
@@ -166,7 +168,7 @@ const Index = () => {
             <span className="absolute -top-8 -right-8 w-20 h-20 bg-blue-100 rounded-full opacity-30 blur-3xl"></span>
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Complete el formulario a continuación para registrarse en nuestro curso de IA
+            Talleres, Charlas, Material didáctico, Nuevas Tendencias
           </p>
         </div>
         

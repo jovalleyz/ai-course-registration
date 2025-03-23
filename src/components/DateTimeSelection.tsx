@@ -82,9 +82,15 @@ const DateTimeSelection: React.FC<DateTimeSelectionProps> = ({
     setCalendarDays(days);
   }, [currentMonth, formData.classType]);
 
-  // Determine if a date should be disabled based on class type and past dates
+  // Determine if a date should be disabled based on class type, past dates, and future month limits
   const isDateDisabled = (date: Date, today: Date, classType: 'individual' | 'group'): boolean => {
     if (date < today) return true;
+    
+    // Allow selection for current month and next 2 months only
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 2);
+    maxDate.setDate(maxDate.getDate() + 1); // Include the full last day
+    if (date > maxDate) return true;
     
     const dayOfWeek = date.getDay();
     
